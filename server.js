@@ -3,10 +3,27 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import { GoogleGenAI } from '@google/genai';
+import { createRequire } from 'module';
+
+import { fileURLToPath } from 'url';
+import path from 'path';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 
 async function extractPdfText(buffer) {
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
+
+ const standardFontDataUrl = path.join(
+  path.dirname(require.resolve('pdfjs-dist/package.json')),
+  'standard_fonts'
+) .split(path.sep).join('/') + '/'; 
+
+  const loadingTask = pdfjsLib.getDocument({
+    data: new Uint8Array(buffer),
+    standardFontDataUrl,
+    disableFontFace: true,
+  });
+
   const pdf = await loadingTask.promise;
   let text = '';
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -26,23 +43,27 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 async function parsePdfBuffer(buffer) {
   const data = new Uint8Array(buffer);
-  
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  
-  const loadingTask = pdfjs.getDocument({ 
+
+ const standardFontDataUrl = path.join(
+  path.dirname(require.resolve('pdfjs-dist/package.json')),
+  'standard_fonts'
+) .split(path.sep).join('/') + '/'; 
+
+  const loadingTask = pdfjs.getDocument({
     data,
+    standardFontDataUrl,   // ← key fix
     disableFontFace: true,
-    isEvalSupported: false 
+    isEvalSupported: false,
   });
-  
+
   const pdf = await loadingTask.promise;
   let extractedText = '';
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
-    const pageText = textContent.items.map((item) => item.str).join(' ');
-    extractedText += pageText + '\n';
+    extractedText += textContent.items.map(item => item.str).join(' ') + '\n';
   }
 
   return extractedText;
