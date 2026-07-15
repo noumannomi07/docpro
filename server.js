@@ -4,6 +4,8 @@ import cors from 'cors';
 import multer from 'multer';
 import { GoogleGenAI } from '@google/genai';
 import PDFParser from 'pdf2json';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 async function extractPdfText(buffer) {
   return new Promise((resolve, reject) => {
