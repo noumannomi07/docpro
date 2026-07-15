@@ -116,6 +116,12 @@ app.post('/api/extract-metadata', upload.single('file'), async (req, res) => {
     res.status(500).json({ error: 'Failed to extract structured data.' });
   }
 });
-
+app.get('/debug', (req, res) => {
+  res.json({
+    hasKey: !!process.env.GEMINI_API_KEY,
+    keyStart: process.env.GEMINI_API_KEY?.slice(0, 8) || 'NOT FOUND',
+    allEnvKeys: Object.keys(process.env).filter(k => k.includes('GEMINI'))
+  });
+});
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
