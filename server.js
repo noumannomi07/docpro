@@ -27,14 +27,12 @@ const upload = multer({ storage: multer.memoryStorage() });
 async function parsePdfBuffer(buffer) {
   const data = new Uint8Array(buffer);
   
-  // Use the Node-compatible ES module entrypoint for pdfjs-dist
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   
-  // Configure pdfjs-dist to load standard font assets from a public CDN
-  // This is critical for restricted environments like Vercel Serverless!
   const loadingTask = pdfjs.getDocument({ 
     data,
-    standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@4.10.38/standard_fonts/'
+    disableFontFace: true,
+    isEvalSupported: false 
   });
   
   const pdf = await loadingTask.promise;
