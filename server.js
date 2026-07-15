@@ -158,4 +158,6 @@ app.post('/api/extract-metadata', upload.single('file'), async (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`🚀 Advanced Backend running on http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Advanced Backend running on port ${PORT}`);
+});
