@@ -3,56 +3,10 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import { GoogleGenAI } from '@google/genai';
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
-
-import path from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-if (typeof globalThis.DOMMatrix === 'undefined') {
-  globalThis.DOMMatrix = class DOMMatrix {
-    constructor() {
-      this.a=1; this.b=0; this.c=0; this.d=1; this.e=0; this.f=0;
-      this.m11=1; this.m12=0; this.m13=0; this.m14=0;
-      this.m21=0; this.m22=1; this.m23=0; this.m24=0;
-      this.m31=0; this.m32=0; this.m33=1; this.m34=0;
-      this.m41=0; this.m42=0; this.m43=0; this.m44=1;
-    }
-    multiply() { return this; }
-    translate() { return this; }
-    scale() { return this; }
-    rotate() { return this; }
-    inverse() { return this; }
-    transformPoint(p) { return p; }
-  };
-}
-
-if (typeof globalThis.Path2D === 'undefined') {
-  globalThis.Path2D = class Path2D {};
-}
-
-if (typeof globalThis.ImageData === 'undefined') {
-  globalThis.ImageData = class ImageData {
-    constructor(w, h) { this.width = w; this.height = h; }
-  };
-}
-
-const standardFontDataUrl = new URL(
-  '../node_modules/pdfjs-dist/standard_fonts/',
-  import.meta.url
-).href;
 
 async function extractPdfText(buffer) {
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-
- const loadingTask = pdfjs.getDocument({
-  data,
-  standardFontDataUrl,
-  disableFontFace: true,
-  isEvalSupported: false,
-});
+  const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
   const pdf = await loadingTask.promise;
   let text = '';
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -72,22 +26,23 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 async function parsePdfBuffer(buffer) {
   const data = new Uint8Array(buffer);
+  
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-
- const loadingTask = pdfjs.getDocument({
-  data,
-  standardFontDataUrl,  // already has trailing slash from URL constructor
-  disableFontFace: true,
-  isEvalSupported: false,
-});
-
+  
+  const loadingTask = pdfjs.getDocument({ 
+    data,
+    disableFontFace: true,
+    isEvalSupported: false 
+  });
+  
   const pdf = await loadingTask.promise;
   let extractedText = '';
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
-    extractedText += textContent.items.map(item => item.str).join(' ') + '\n';
+    const pageText = textContent.items.map((item) => item.str).join(' ');
+    extractedText += pageText + '\n';
   }
 
   return extractedText;
