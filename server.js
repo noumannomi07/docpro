@@ -25,17 +25,21 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const upload = multer({ storage: multer.memoryStorage() });
 
 async function parsePdfBuffer(buffer) {
-  // Convert Node buffer to Uint8Array which pdfjs-dist expects
   const data = new Uint8Array(buffer);
   
-  // Import pdfjs dynamically using the Node-safe legacy build
+  // Use the Node-compatible ES module entrypoint for pdfjs-dist
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   
-  const loadingTask = pdfjs.getDocument({ data });
+  // Configure pdfjs-dist to load standard font assets from a public CDN
+  // This is critical for restricted environments like Vercel Serverless!
+  const loadingTask = pdfjs.getDocument({ 
+    data,
+    standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@4.10.38/standard_fonts/'
+  });
+  
   const pdf = await loadingTask.promise;
   let extractedText = '';
 
-  // Loop through every page and extract text items
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
