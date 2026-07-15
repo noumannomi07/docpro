@@ -4,9 +4,12 @@ import cors from 'cors';
 import multer from 'multer';
 import { GoogleGenAI } from '@google/genai';
 import { createRequire } from 'module';
-
 import { fileURLToPath } from 'url';
+
 import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 if (typeof globalThis.DOMMatrix === 'undefined') {
   globalThis.DOMMatrix = class DOMMatrix {
@@ -36,23 +39,20 @@ if (typeof globalThis.ImageData === 'undefined') {
   };
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const require = createRequire(import.meta.url);
+const standardFontDataUrl = new URL(
+  '../node_modules/pdfjs-dist/standard_fonts/',
+  import.meta.url
+).href;
 
 async function extractPdfText(buffer) {
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
- const standardFontDataUrl = path.join(
-  path.dirname(require.resolve('pdfjs-dist/package.json')),
-  'standard_fonts'
-) .split(path.sep).join('/') + '/'; 
-
-  const loadingTask = pdfjsLib.getDocument({
-    data: new Uint8Array(buffer),
-    standardFontDataUrl,
-    disableFontFace: true,
-  });
-
+ const loadingTask = pdfjs.getDocument({
+  data,
+  standardFontDataUrl,
+  disableFontFace: true,
+  isEvalSupported: false,
+});
   const pdf = await loadingTask.promise;
   let text = '';
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -74,17 +74,12 @@ async function parsePdfBuffer(buffer) {
   const data = new Uint8Array(buffer);
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
- const standardFontDataUrl = path.join(
-  path.dirname(require.resolve('pdfjs-dist/package.json')),
-  'standard_fonts'
-) .split(path.sep).join('/') + '/'; 
-
-  const loadingTask = pdfjs.getDocument({
-    data,
-    standardFontDataUrl,   // ← key fix
-    disableFontFace: true,
-    isEvalSupported: false,
-  });
+ const loadingTask = pdfjs.getDocument({
+  data,
+  standardFontDataUrl,  // already has trailing slash from URL constructor
+  disableFontFace: true,
+  isEvalSupported: false,
+});
 
   const pdf = await loadingTask.promise;
   let extractedText = '';
